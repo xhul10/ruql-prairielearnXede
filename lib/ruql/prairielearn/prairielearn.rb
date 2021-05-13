@@ -1,8 +1,9 @@
 module Ruql
-  class PrairieLearn
+  class Prairielearn
     require 'builder'
     require 'erb'
     require 'securerandom'      # for uuid generation
+    require 'byebug'
     
     attr_reader :output
 
@@ -14,9 +15,10 @@ module Ruql
         raise Ruql::OptionsError.new("--default-topic must be specified")
       @omit_tags = options.delete('--omit-tags').to_s.split(',')
       @extra_tags = options.delete('--extra-tags').to_s.split(',')
-      @partial_credit = options.delete('--partial-credit')
-      raise Ruql::OptionsError.new('--partial-credit must be one of EDC or PC if given') unless
-        %w(edc pc).include?(@partial_credit.downcase)
+      if (@partial_credit = options.delete('--partial-credit'))
+        raise Ruql::OptionsError.new('--partial-credit must be one of EDC or PC if given') unless
+          %w(edc pc).include?(@partial_credit.downcase)
+      end
     end
 
     def self.allowed_options
@@ -46,37 +48,19 @@ eos
     end
 
     def render_quiz
-      questions_path = get_or_make_questions_subdir
+      questions_path = get_or_make_questions_subdir!
       @quiz.questions.each do |q|
-        tags = q.question_tags
-        next if should_skip?(tags)
-        topic = get_topic(tags)
-        @uuid = SecureRandom.uuid
-        title = tags.empty? ? @uuid : tags.first.capitalize
-        tags += @extra_tags
-        @output << "#{title} // #{topic} // #{tags.join ','}\n"
+        byebug
+        @plq = Ruql::Prairielearn::Question.new(q,@omit_tags,@extra_tags,@default_topic)
+        next if @pl_question.should_skip?
+        @output << "#{@plq.title} // #{@plq.topic} // #{@plq.tags.join ','}\n"
       end
       self
     end
 
     private
 
-    def should_skip?(tags)
-      if @omit_tags.any? { |t| tags.include? t }
-        STDERR.puts %Q{Skipping: #{q.question_text.strip[0,40] + '...'}}
-        true
-      else
-        nil
-      end
-    end
-
-    def get_topic(tags)
-      (t = tags.any? { |tag| tag =~ /^topic:/ }) ?
-        tags.delete(t).gsub(/^topic:/, '') :
-        @default_topic
-    end
-
-    def get_or_make_questions_subdir
+    def get_or_make_questions_subdir!
       return "." # for now
     end
 

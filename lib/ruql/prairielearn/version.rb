@@ -1,5 +1,5 @@
 module Ruql
-  module Prairielearn
+  class Prairielearn
     VERSION = "0.1.0"
   end
 end
