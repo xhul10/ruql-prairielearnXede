@@ -1,7 +1,8 @@
 module Ruql
   class Prairielearn
     class Question
-      
+      require 'securerandom'      # for uuid generation
+    
       attr_reader :tags, :uuid, :title, :topic
 
       def initialize(question,omit_tags,extra_tags,default_topic)
@@ -17,6 +18,7 @@ module Ruql
         @topic = (t = @tags.any? { |tag| tag =~ /^topic:/ }) ?
                    @tags.delete(t).gsub(/^topic:/, '') :
                    default_topic
+        @title = @tags.empty? ? @uuid : @tags.first
         @tags += extra_tags
       end
 

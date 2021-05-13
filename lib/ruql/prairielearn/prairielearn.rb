@@ -3,7 +3,6 @@ module Ruql
     require 'builder'
     require 'erb'
     require 'securerandom'      # for uuid generation
-    require 'byebug'
     
     attr_reader :output
 
@@ -50,9 +49,8 @@ eos
     def render_quiz
       questions_path = get_or_make_questions_subdir!
       @quiz.questions.each do |q|
-        byebug
         @plq = Ruql::Prairielearn::Question.new(q,@omit_tags,@extra_tags,@default_topic)
-        next if @pl_question.should_skip?
+        next if @plq.should_skip?
         @output << "#{@plq.title} // #{@plq.topic} // #{@plq.tags.join ','}\n"
       end
       self
