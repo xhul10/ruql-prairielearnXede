@@ -1,8 +1,6 @@
 module Ruql
   class Prairielearn
     require 'builder'
-    require 'erb'
-    require 'securerandom'      # for uuid generation
     
     attr_reader :output
 
@@ -47,19 +45,39 @@ eos
     end
 
     def render_quiz
-      questions_path = get_or_make_questions_subdir!
-      @quiz.questions.each do |q|
-        @plq = Ruql::Prairielearn::Question.new(q,@omit_tags,@extra_tags,@default_topic)
-        next if @plq.should_skip?
-        @output << "#{@plq.title} // #{@plq.topic} // #{@plq.tags.join ','}\n"
+      begin
+        questions_path = get_or_make_questions_subdir!
+        @quiz.questions.each do |q|
+          @plq = Ruql::Prairielearn::Question.new(q,@partial_credit,@extra_tags,@default_topic,questions_path)
+          if @omit_tags.any? { |t| q.tags.include? t }
+            @output << "  Skip #{@plq.digest}"
+            next
+          end
+          @plq.create_question_files!
+          @output << "Create #{File.basename questions_path}/#{File.basename @plq.question_dir} topic=#{@plq.topic} tags=[#{@plq.tags.join ','}]\n"
+        end
+        self
+      rescue StandardError => e
+        raise e
+        puts "Exiting: #{e.backtrace}"
+        Ruql::Prairielearn::Question.clean_up_after_error!
       end
-      self
     end
 
     private
 
     def get_or_make_questions_subdir!
-      return "." # for now
+      # if current dir is named 'questions', put things here
+      if (File.basename(Dir.pwd) == 'questions')
+        File.absolute_path '.'
+      # else if a subdir exists with that name, use it
+      elsif File.directory?('questions')
+        File.absolute_path 'questions'
+      else
+        # create a questions dir
+        Dir.mkdir('questions')
+        File.absolute_path 'questions'
+      end
     end
 
   end

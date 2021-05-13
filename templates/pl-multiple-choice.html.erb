@@ -1,15 +1,15 @@
 <pl-question-panel>
 
-  <%= @question.question_text %>
+  <%= question.question_text %>
 
 </pl-question-panel>
 
 <pl-multiple-choice
   answers-name="t"
-  none-of-the-above="<%= (!!@none_of_the_above).to_s %>"
+  none-of-the-above="<%= (!!none_of_the_above).to_s %>"
   hide-letter-keys="true">
 
-  <%- @question.answers.each do |answer| %>
+  <% question.answers.each do |answer| %>
   <pl-answer correct="<%= !!(answer.correct?) %>">
     <%= answer.answer_text %>
   </pl-answer>

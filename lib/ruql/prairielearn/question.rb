@@ -2,33 +2,84 @@ module Ruql
   class Prairielearn
     class Question
       require 'securerandom'      # for uuid generation
-    
-      attr_reader :tags, :uuid, :title, :topic
+      require 'erb'
+      
+      attr_reader :question, :partial_credit, :tags, :uuid, :topic, :title, :question_dir, :digest, :none_of_the_above
 
-      def initialize(question,omit_tags,extra_tags,default_topic)
-        @gem_root = Gem.loaded_specs['ruql-html'].full_gem_path rescue '.'
+      @@dirnames = {} # keep track of titles seen, since subdir names must be unique
+
+      def initialize(question,partial_credit,extra_tags,default_topic,path='.')
+        @gem_root = Gem.loaded_specs['ruql-prairielearn'].full_gem_path
+        @path = path
         @question = question
-        @omit_tags = omit_tags
+        @partial_credit = partial_credit
         @extra_tags = extra_tags
-        @json_template =            File.join(@gem_root, 'info.json.erb')
-        @multiple_choice_template = File.join(@gem_root, 'pl-multiple-choice.html.erb')
-        @select_multiple_template = File.join(@gem_root, 'pl-checkbox.html.erb')
+        @json_template =            File.join(@gem_root, 'templates', 'info.json.erb')
+        @multiple_choice_template = File.join(@gem_root, 'templates', 'pl-multiple-choice.html.erb')
+        @select_multiple_template = File.join(@gem_root, 'templates', 'pl-checkbox.html.erb')
         @uuid = SecureRandom.uuid
         @tags = @question.question_tags
+        @digest = @question.question_text.strip[0,40] + '...'
+        @title = (@tags.empty? ? @uuid : @tags.first)
         @topic = (t = @tags.any? { |tag| tag =~ /^topic:/ }) ?
                    @tags.delete(t).gsub(/^topic:/, '') :
                    default_topic
-        @title = @tags.empty? ? @uuid : @tags.first
         @tags += extra_tags
+        @none_of_the_above = question.answers.any? { |a| a =~ /^none of (these|the above)$/i }
+        @question_dir = nil
       end
 
-      def should_skip?
-        if @omit_tags.any? { |t| tags.include? t }
-          STDERR.puts %Q{Skipping: #{@question.question_text.strip[0,40] + '...'}}
-          true
-        else
-          nil
+      def create_question_files!
+        begin
+          @question_dir = dirname()
+          Dir.mkdir(@question_dir) unless File.directory?(@question_dir)
+          create_json!
+          create_question_html!
+        rescue RuntimeError => e
+          raise Ruql::QuizContentError.new(e.message)
         end
+      end
+
+      # If anything goes wrong, delete any files we created
+      def self.clean_up_after_error!
+        @@dirnames.each_pair do |dir,num|
+          puts "delete #{File.join(@path,dir)}"
+          if num > 1
+            2.upto(num).each do |otherdir|
+              puts "delete #{File.join(@path,otherdir)}"
+            end
+          end
+        end
+      end
+      
+      private
+
+      def create_json!
+        json = ERB.new(IO.read(File.expand_path @json_template)).result(binding)
+        File.open(File.join(@question_dir, 'info.json'), 'w') do |f|
+          f.puts json
+        end
+      end
+
+      def create_question_html!
+        case question
+        when MultipleChoice then template = @multiple_choice_template
+        when SelectMultiple then template = @select_multiple_template
+        else raise Ruql::QuizContentError.new("Unknown question type: '#{@digest}'")
+        end
+        html = ERB.new(IO.read(File.expand_path template)).result(binding)
+        File.open(File.join(@question_dir, 'question.html'), 'w') do |f|
+          f.puts html
+        end
+      end
+      
+      def dirname
+        try_name = @title.downcase.gsub( /[^a-z0-9\-]+/i, '_')
+        if @@dirnames.has_key?(try_name)
+          @@dirnames[try_name] += 1
+          try_name << '_' << @@dirnames[try_name]
+        end
+        File.join(@path, try_name)
       end
     end
   end
