@@ -1,0 +1,23 @@
+<pl-question-panel>
+
+  <%= @question.question_text %>
+
+</pl-question-panel>
+
+<pl-checkbox
+  answers-name="t"
+  <%- if @quiz.partial_credit.blank? %>
+  partial-credit="false"
+  <% else %>
+  partial-credit="true"
+  partial-credit-method="<%= @quiz.partial_credit.downcase %>"
+  <% end %>
+  hide-letter-keys="true"
+  hide-help-text="false"
+  fixed-order="false">
+
+  <%- @question.answers.each do |answer| %>
+  <pl-answer correct="<%= !!(answer.correct?) %>">
+    <%= answer.answer_text %>
+  </pl-answer>
+</pl-checkbox>

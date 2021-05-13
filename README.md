@@ -29,6 +29,8 @@ Converts questions in `ruql_file.rb` into a set of PrairieLearn question
 generators.  Each question will go in its own subdirectory containing
 `question.html` and `info.json`.  These are assumed to be questions
 that require no special server-side files.
+The attribute `singleVariant` will be set to `true` in
+`info.json` since these questions are by definition single-variant.
 
 Supported RuQL question types and their PrairieLearn equivalent
 elements are as follows; unsupported questions are ignored with a
