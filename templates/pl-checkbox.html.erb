@@ -6,19 +6,29 @@
 
 <pl-checkbox
   answers-name="t"
-  <% if partial_credit.nil? %>
+<% if partial_credit.nil? -%>
   partial-credit="false"
-  <% else %>
+<% else %>
   partial-credit="true"
   partial-credit-method="<%= partial_credit.downcase %>"
-  <% end %>
+<% end -%>
   hide-letter-keys="true"
   hide-help-text="false"
   fixed-order="false">
 
-  <% question.answers.each do |answer| %>
+<% question.answers.each do |answer| -%>
   <pl-answer correct="<%= !!(answer.correct?) %>">
     <%= answer.answer_text %>
+<% if answer.has_explanation? -%>
+    <!-- begin hint -->
+    <pl-hide-in-panel question="true" submission="true" answer="true">
+      <div class="pl-answer-hint">
+        <%= answer.explanation %>
+      </div>
+    </pl-hide-in-panel>
+    <!-- end hint -->
+<% end -%>
   </pl-answer>
-  <% end %>
+
+<% end -%>
 </pl-checkbox>

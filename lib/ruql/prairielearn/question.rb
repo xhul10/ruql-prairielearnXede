@@ -3,6 +3,7 @@ module Ruql
     class Question
       require 'securerandom'      # for uuid generation
       require 'erb'
+      require 'fileutils'
       
       attr_reader :question, :partial_credit, :tags, :uuid, :topic, :title, :question_dir, :digest, :none_of_the_above
 
@@ -10,7 +11,7 @@ module Ruql
 
       def initialize(question,partial_credit,extra_tags,default_topic,path='.')
         @gem_root = Gem.loaded_specs['ruql-prairielearn'].full_gem_path
-        @path = path
+        @@path ||= path
         @question = question
         @partial_credit = partial_credit
         @extra_tags = extra_tags
@@ -43,10 +44,14 @@ module Ruql
       # If anything goes wrong, delete any files we created
       def self.clean_up_after_error!
         @@dirnames.each_pair do |dir,num|
-          puts "delete #{File.join(@path,dir)}"
+          fullpath = File.join(@@path,dir)
+          STDERR.puts "delete #{fullpath}"
+          FileUtils.rm_rf fullpath
           if num > 1
             2.upto(num).each do |otherdir|
-              puts "delete #{File.join(@path,otherdir)}"
+              fullpath = File.join(@@path,"#{dir}_#{otherdir}")
+              STDERR.puts "delete #{fullpath}"
+              FileUtils.rm_rf fullpath
             end
           end
         end
@@ -55,7 +60,7 @@ module Ruql
       private
 
       def create_json!
-        json = ERB.new(IO.read(File.expand_path @json_template)).result(binding)
+        json = ERB.new(IO.read(File.expand_path @json_template),nil,'-').result(binding)
         File.open(File.join(@question_dir, 'info.json'), 'w') do |f|
           f.puts json
         end
@@ -67,7 +72,7 @@ module Ruql
         when SelectMultiple then template = @select_multiple_template
         else raise Ruql::QuizContentError.new("Unknown question type: '#{@digest}'")
         end
-        html = ERB.new(IO.read(File.expand_path template)).result(binding)
+        html = ERB.new(IO.read(File.expand_path template),nil,'-').result(binding)
         File.open(File.join(@question_dir, 'question.html'), 'w') do |f|
           f.puts html
         end
@@ -77,9 +82,11 @@ module Ruql
         try_name = @title.downcase.gsub( /[^a-z0-9\-]+/i, '_')
         if @@dirnames.has_key?(try_name)
           @@dirnames[try_name] += 1
-          try_name << '_' << @@dirnames[try_name]
+          try_name << "_#{@@dirnames[try_name]}"
+        else
+          @@dirnames[try_name] = 1
         end
-        File.join(@path, try_name)
+        File.join(@@path, try_name)
       end
     end
   end

@@ -6,12 +6,22 @@
 
 <pl-multiple-choice
   answers-name="t"
-  none-of-the-above="<%= (!!none_of_the_above).to_s %>"
+  none-of-the-above="<%= none_of_the_above %>"
   hide-letter-keys="true">
 
-  <% question.answers.each do |answer| %>
+<% question.answers.each do |answer| -%>
   <pl-answer correct="<%= !!(answer.correct?) %>">
     <%= answer.answer_text %>
+<% if answer.has_explanation? -%>
+    <!-- begin hint -->
+    <pl-hide-in-panel question="true" submission="true" answer="true">
+      <div class="pl-answer-hint">
+        <%= answer.explanation %>
+      </div>
+    </pl-hide-in-panel>
+    <!-- end hint -->
+<% end -%>
   </pl-answer>
 
+<% end -%>
 </pl-multiple-choice>
