@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ruql-prairielearn (0.1.0)
+    ruql-prairielearn (0.1.1)
       builder (~> 3.0)
       ruql (~> 1.0, >= 1.0.2)
 
@@ -24,7 +24,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.10.0)
     rspec-support (3.10.2)
-    ruql (1.0.4)
+    ruql (1.0.5)
 
 PLATFORMS
   ruby

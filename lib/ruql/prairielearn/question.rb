@@ -21,8 +21,9 @@ module Ruql
         @uuid = SecureRandom.uuid
         @tags = @question.question_tags
         @digest = @question.question_text.strip[0,40] + '...'
-        @title = (@tags.empty? ? @uuid : @tags.first)
-        @topic = (t = @tags.any? { |tag| tag =~ /^topic:/ }) ?
+        @title = (@tags.empty? ? @uuid : @tags.shift)
+        @title = @title.capitalize unless @title =~ /[A-Z]/ # Capitalize if all lowercase
+        @topic = (t = @tags.detect { |tag| tag =~ /^topic:/ }) ?
                    @tags.delete(t).gsub(/^topic:/, '') :
                    default_topic
         @tags += extra_tags

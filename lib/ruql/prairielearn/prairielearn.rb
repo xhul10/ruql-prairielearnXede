@@ -67,7 +67,7 @@ eos
         end
         self
       rescue StandardError => e
-        STDERR.puts "Exiting: #{e.backtrace}"
+        STDERR.puts "Exiting: #{e.message}\n#{e.backtrace}"
         Ruql::Prairielearn::Question.clean_up_after_error!
       end
     end
