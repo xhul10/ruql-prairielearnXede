@@ -26,6 +26,9 @@ module Ruql
         @topic = (t = @tags.detect { |tag| tag =~ /^topic:/ }) ?
                    @tags.delete(t).gsub(/^topic:/, '') :
                    default_topic
+        if (group = question.question_group.to_s) != ''
+          @tags << "group:#{group}"
+        end
         @tags += extra_tags
         @none_of_the_above = question.answers.any? { |a| a =~ /^none of (these|the above)$/i }
         @question_dir = nil
@@ -80,7 +83,12 @@ module Ruql
       end
       
       def dirname
-        try_name = @title.downcase.gsub( /[^a-z0-9\-]+/i, '_')
+        try_name = @title.downcase.
+                     gsub( /[^a-z0-9\-]+/i, '_'). # replace special chars with underscore
+                     gsub( /^_+/, '').            # remove leading special chars
+                     gsub( /_+$/, '')             # remove trailing special chars
+        # make sure filename doesn't end up blank after all the substitution
+        try_name += '0' if try_name == ''
         if @@dirnames.has_key?(try_name)
           @@dirnames[try_name] += 1
           try_name << "_#{@@dirnames[try_name]}"
